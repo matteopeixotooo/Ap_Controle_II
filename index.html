@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistemas de Controle II: Seminário de Controle Preditivo (MPC)</title>
+
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      options: {
+        ignoreHtmlClass: 'tex2jax_ignore',
+        processHtmlClass: 'tex2jax_process'
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: #0f172a;
+      color: #f1f5f9;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .presentation-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      height: calc(100vh - 60px);
+    }
+
+    .slide {
+      display: none;
+      width: 100%;
+      height: 100%;
+      background: #1e293b;
+      border-radius: 12px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+      padding: 40px;
+      position: relative;
+      overflow-y: auto;
+      border: 1px solid #334155;
+      flex-direction: column;
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    h1 {
+      font-size: 2.3rem;
+      color: #3b82f6;
+      border-bottom: 2px solid #334155;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+
+    h2 {
+      font-size: 1.6rem;
+      color: #3b82f6;
+      margin-bottom: 12px;
+    }
+
+    h3 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #94a3b8;
+      margin-bottom: 5px;
+    }
+
+    p,
+    li {
+      font-size: 1.1rem;
+      line-height: 1.5;
+      color: #cbd5e1;
+      margin-bottom: 10px;
+    }
+
+    ul,
+    ol {
+      margin-left: 22px;
+      margin-bottom: 12px;
+    }
+
+    li {
+      margin-bottom: 5px;
+    }
+
+    .slide-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      flex: 1;
+      align-items: start;
+      margin-top: 5px;
+    }
+
+    .grid-left,
+    .grid-right {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    .math-display-container {
+      background-color: #0f172a;
+      border-left: 4px solid #3b82f6;
+      padding: 15px;
+      margin: 8px 0;
+      border-radius: 0 8px 8px 0;
+      box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.4);
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 75px;
+    }
+
+    .alert-box {
+      background-color: rgba(30, 41, 59, 0.7);
+      border-left: 4px solid #3b82f6;
+      padding: 15px;
+      margin: 8px 0;
+      border-radius: 0 6px 6px 0;
+      border: 1px solid #334155;
+    }
+
+    .alert-box p {
+      color: #e2e8f0;
+      font-weight: 500;
+      margin-bottom: 0;
+      font-size: 1.05rem;
+    }
+
+    .tech-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      font-size: 0.95rem;
+    }
+
+    .tech-table th,
+    .tech-table td {
+      border: 1px solid #334155;
+      padding: 10px 14px;
+      text-align: left;
+    }
+
+    .tech-table th {
+      background-color: #0f172a;
+      color: #3b82f6;
+      font-weight: 600;
+    }
+
+    .tech-table tr:nth-child(even) {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    .tech-highlight {
+      color: #3b82f6;
+      font-weight: 600;
+    }
+
+    .diagram-container {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+      font-family: monospace;
+      font-size: 1.15rem;
+      color: #3b82f6;
+      line-height: 1.4;
+      margin: 10px 0;
+    }
+
+    .controls {
+      background: #0f172a;
+      color: white;
+      padding: 15px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+      border-top: 1px solid #1e293b;
+      height: 60px;
+    }
+
+    .btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f1f5f9;
+      padding: 10px 24px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border-radius: 6px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      background: #3b82f6;
+      color: #0f172a;
+      border-color: #38bdf8;
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      background: #0f172a;
+      color: #475569;
+      border-color: #1e293b;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .progress-indicator {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+
+<body class="tex2jax_process">
+
+  <div class="presentation-container">
+
+    <!-- SLIDE 1: CAPA -->
+    <div class="slide active" style="justify-content: center; align-items: center; text-align: center;">
+      <h3 style="color: #3b82f6;">Sistemas de Controle II</h3>
+      <h1 style="border: none; font-size: 3.2rem; margin-bottom: 15px; color: #f1f5f9;">Controle Preditivo Baseado em Modelo (MPC)</h1>
+      <p style="font-size: 1.5rem; color: #94a3b8; max-width: 900px; margin: 0 auto 30px auto;">Formulação Algorítmica Exaustiva, Modelagem Fenomenológica do Turbogerador CC e Co-Projeto Eletromecânico em Espaço de Estados</p>
+      <div style="width: 140px; height: 4px; background: #3b82f6;"></div>
+    </div>
+
+    <!-- SLIDE 2: CRONOGRAMA INTEGRAL -->
+    <div class="slide">
+      <h2>Estrutura Geral do Desenvolvimento Técnico</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>O presente trabalho aborda de forma estritamente analítica todas as etapas de projeto de engenharia, dividindo-se em quatro grandes blocos de fundamentação:</p>
+          <table class="tech-table">
+            <thead>
+              <tr>
+                <th>Macroetapa</th>
+                <th>Escopo Metodológico e Rigor Matemático</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1. Introdução Teórica</strong></td>
+                <td>Limitações estruturais da família PID e quebra do paradigma clássico.</td>
+              </tr>
+              <tr>
+                <td><strong>2. Formulação do MPC</strong></td>
+                <td>Álgebra recursiva exaustiva dos preditores, matrizes livres/forçadas e otimização.</td>
+              </tr>
+              <tr>
+                <td><strong>3. Modelo da Planta</strong></td>
+                <td>Dedução física completa do turbogerador CC desde o tempo até as matrizes de estados.</td>
+              </tr>
+              <tr>
+                <td><strong>4. Co-Projeto e Simulação</strong></td>
+                <td>Acoplamento digital do sistema, parâmetros de sintonia e resultados em malha.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid-right">
+          <div class="alert-box">
+            <p>Nota de Rigor Técnico: Nenhuma aproximação heurística ou simplificação de caixa-preta será adotada. O controlador preditivo será deduzido na sua forma matricial pura, enquanto a planta terá todas as suas passagens algébricas demonstradas passo a passo.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 1: INTRODUÇÃO TEÓRICA -->
+    <!-- SLIDE 3: O PROBLEMA DO PID -->
+    <div class="slide">
+      <h3>1. Introdução Teórica</h3>
+      <h2>Limitações Estruturais do Controle Clássico Reativo</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>Algoritmos de controle baseados na estrutura clássica PID operam sob uma lei de atuação estritamente reativa, calculando a variável manipulada com base em erros presentes e passados:</p>
+          <div class="math-display-container">
+            $$u(t) = K_p e(t) + K_i \int_{0}^{t} e(\tau)d\tau + K_d \frac{de(t)}{dt}$$
+          </div>
+        </div>
+        <div class="grid-right">
+          <p>Esta abordagem impõe restrições severas ao desempenho dinâmico de plantas complexas:</p>
+          <ul>
+            <li>Incapacidade de antecipação: O distúrbio precisa afetar a saída real da planta para que o erro se propague e gere ação corretiva.</li>
+            <li>Saturação de atuadores: Sinais agressivos de ganho provocam o fenômeno de $windup$ e levam atuadores físicos aos limites operacionais de corte.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: PARADIGMA PREDITIVO -->
+    <div class="slide">
+      <h3>1. Introdução Teórica</h3>
+      <h2>A Quebra de Paradigma pelo Controle Preditivo</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>O Controle Preditivo Baseado em Modelo (MPC) substitui a ação corretiva clássica por uma estratégia proativa de otimização em tempo real.</p>
+          <p>A premissa fundamental do MPC consiste na incorporação de uma réplica matemática exata da dinâmica do processo dentro do próprio algoritmo de controle. Essa arquitetura permite estimar o comportamento futuro do sistema ao longo de uma janela de tempo definida.</p>
+        </div>
+        <div class="grid-right">
+          <p>Principais diferenciais de engenharia:</p>
+          <ul>
+            <li>Tratamento direto de sistemas multivariáveis (MIMO) com acoplamentos complexos.</li>
+            <li>Inclusão explícita de restrições de desigualdade nas variáveis de estado e de controle diretamente no problema de otimização.</li>
+            <li>Antecipação de referências futuras conhecidas (trajetórias predefinidas).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: ARQUITETURA DA REALIMENTAÇÃO DE MALHA FECHADA -->
+    <div class="slide">
+      <h3>1. Introdução Teórica</h3>
+      <h2>A Arquitetura de Previsão em Malha Fechada Genérica</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>O funcionamento em malha fechada do MPC exige que a leitura do estado atual ou da saída medida retorne continuamente ao bloco do controlador a cada período de amostragem digital.</p>
+          <p>Esta malha de realimentação garante que o cálculo do plano ótimo executado no horizonte preditivo considere o comportamento real e atualizado da dinâmica do processo, atenuando desvios e erros de modelo.</p>
+        </div>
+        <div class="grid-right">
+          <div class="svg-container">
+            <svg width="100%" height="150" viewBox="0 0 400 150">
+              <rect x="10" y="40" width="100" height="50" rx="5" fill="#1e293b" stroke="#3b82f6" stroke-width="2" />
+              <text x="60" y="65" fill="#f1f5f9" font-size="12" text-anchor="middle" font-weight="bold">Controlador</text>
+              <text x="60" y="80" fill="#f1f5f9" font-size="11" text-anchor="middle">MPC</text>
+
+              <line x1="110" y1="65" x2="170" y2="65" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)" />
+              <text x="140" y="55" fill="#94a3b8" font-size="11" text-anchor="middle">u(k)</text>
+
+              <rect x="170" y="30" width="130" height="70" rx="5" fill="#0f172a" stroke="#475569" stroke-width="2" />
+              <text x="235" y="60" fill="#cbd5e1" font-size="12" text-anchor="middle" font-weight="bold">Sistema Genérico</text>
+              <text x="235" y="78" fill="#94a3b8" font-size="11" text-anchor="middle">x(k+1)=Ad·x+Bd·u</text>
+
+              <line x1="300" y1="65" x2="360" y2="65" stroke="#475569" stroke-width="2" />
+              <circle cx="330" cy="65" r="3" fill="#cbd5e1" />
+              <text x="345" y="55" fill="#94a3b8" font-size="11" text-anchor="middle">y(k)</text>
+
+              <rect x="360" y="45" width="35" height="40" rx="3" fill="#1e293b" stroke="#475569" stroke-width="1" />
+              <text x="377" y="68" fill="#cbd5e1" font-size="10" text-anchor="middle">Saída</text>
+
+              <line x1="330" y1="65" x2="330" y2="120" stroke="#3b82f6" stroke-width="2" />
+              <line x1="330" y1="120" x2="60" y2="120" stroke="#3b82f6" stroke-width="2" />
+              <line x1="60" y1="120" x2="60" y2="90" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)" />
+              <text x="195" y="135" fill="#3b82f6" font-size="11" text-anchor="middle">Realimentação de Estados / Saída</text>
+
+              <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6" />
+                </marker>
+              </defs>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 2: FORMULAÇÃO MATEMÁTICA DO CONTROLADOR MPC GENÉRICO -->
+    <!-- SLIDE 6: ESPAÇO DE ESTADOS DISCRETO -->
+    <div class="slide">
+      <h3>2. Discussão Matemática</h3>
+      <h2>Equações de Base do Espaço de Estados Discreto</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>Dedicamos esta seção inteiramente à dedução analítica pura de um controlador MPC linear genérico. Consideremos o sistema discreto invariante no tempo:</p>
+          <div class="math-display-container">
+            $$\mathbf{x}(k+1) = \mathbf{A}_d\mathbf{x}(k) + \mathbf{B}_d u(k)$$
+          </div>
+          <div class="math-display-container">
+            $$y(k) = \mathbf{C}_d\mathbf{x}(k)$$
+          </div>
+        </div>
+        <div class="grid-right">
+          <p>Definições de Janela Temporal:</p>
+          <ul>
+            <li><span class="tech-highlight">Horizonte de Predição ($N$):</span> Quantidade de passos futuros em que a saída será estimada e comparada com a referência.</li>
+            <li><span class="tech-highlight">Horizonte de Controle ($M$):</span> Número de ações futures de controle a serem otimizadas. Adotamos por simetria analítica rígida o critério padrão de igualdade $M = N$.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: EXPANSÃO RECURSIVA - PASSO 1 -->
+    <div class="slide">
+      <h3>2. Discussão Matemática</h3>
+      <h2>Expansão Recursiva de Estados Futuros: Passo $k+1$</h2>
+      <p>Para construir o preditor vetorial global, projetamos algebricamente a evolução das equações de diferenças partindo do estado medido atual $\mathbf{x}(k)$ em direção ao futuro:</p>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>Para o primeiro passo discreto à frente ($k+1$):</p>
+          <div class="math-display-container">
+            $$\mathbf{x}(k+1) = \mathbf{A}_d\mathbf{x}(k) + \mathbf{B}_d u(k)$$
+          </div>
+          <p>Substituindo este vetor de estado projetado diretamente na equação de leitura da saída discreta $y(k+1)$:</p>
+        </div>
+        <div class="grid-right">
+          <div class="math-display-container">
+            $$y(k+1) = \mathbf{C}_d\mathbf{x}(k+1)$$
+          </div>
+          <div class="math-display-container">
+            $$y(k+1) = \mathbf{C}_d\mathbf{A}_d\mathbf{x}(k) + \mathbf{C}_d\mathbf{B}_d u(k)$$
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 8: EXPANSÃO RECURSIVA - PASSO 2 -->
+    <div class="slide">
+      <h3>2. Discussão Matemática</h3>
+      <h2>Expansão Recursiva de Estados Futuros: Passo $k+2$</h2>
+      <p>Avançando a recorrência linear para o segundo passo discreto futuro ($k+2$):</p>
+      <div class="math-display-container">
+        $$\mathbf{x}(k+2) = \mathbf{A}_d\mathbf{x}(k+1) + \mathbf{B}_d u(k+1)$$
+      </div>
+      <p>Substituindo a expressão completa obtida anteriormente para $\mathbf{x}(k+1)$ dentro deste novo ponto de expansão:</p>
+      <div class="math-display-container">
+        $$\mathbf{x}(k+2) = \mathbf{A}_d\Big(\mathbf{A}_d\mathbf{x}(k) + \mathbf{B}_d u(k)\Big) + \mathbf{B}_d u(k+1) = \mathbf{A}_d^2\mathbf{x}(k) + \mathbf{A}_d\mathbf{B}_d u(k) + \mathbf{B}_d u(k+1)$$
+      </div>
+      <p>Mapeando a saída real estimada para o respectivo instante temporal futuro de análise ($y(k+2)$):</p>
+      <div class="math-display-container">
+        $$y(k+2) = \mathbf{C}_d\mathbf{x}(k+2) = \mathbf{C}_d\mathbf{A}_d^2\mathbf{x}(k) + \mathbf{C}_d\mathbf{A}_d\mathbf{B}_d u(k) + \mathbf{C}_d\mathbf{B}_d u(k+1)$$
+      </div>
+    </div>
+
+    <!-- SLIDE 9: EXPANSÃO RECURSIVA - PASSO 3 -->
+    <div class="slide">
+      <h3>2. Discussão Matemática</h3>
+      <h2>Expansão Recursiva de Estados Futuros: Passo $k+3$</h2>
+      <p>Estendendo o encadeamento algébrico iterativo para o terceiro passo à frente no tempo ($k+3$):</p>
+      <div class="math-display-container">
+        $$\mathbf{x}(k+3) = \mathbf{A}_d\mathbf{x}(k+2) + \mathbf{B}_d u(k+2)$$
+      </div>
+      <p>Substituindo o vetor expandido de $\mathbf{x}(k+2)$ obtido na etapa anterior para manter a dependência apenas de $\mathbf{x}(k)$:</p>
+      <div class="math-display-container">
+        $$\mathbf{x}(k+3) = \mathbf{A}_d\Big(\mathbf{A}_d^2\mathbf{x}(k) + \mathbf{A}_d\mathbf{B}_d u(k) + \mathbf{B}_d u(k+1)\Big) + \mathbf{B}_d u(k+2)$$
+      </div>
+      <div class="math-display-container">
+        $$\mathbf{x}(k+3) = \mathbf{A}_d^3\mathbf{x}(k) + \mathbf{A}_d^2\mathbf{B}_d u(k) + \mathbf{A}_d\mathbf{B}_d u(k+1) + \mathbf{B}_d u(k+2)$$
+      </div>
+      <p>Desta forma, a equação de predição linear para a saída discreta no passo $k+3$ assume o formato:</p>
+      <div class="math-display-container">
+        $$y(k+3) = \mathbf{C}_d\mathbf{A}_d^3\mathbf{x}(k) + \mathbf{C}_d\mathbf{A}_d^2\mathbf{B}_d u(k) + \mathbf{C}_d\mathbf{A}_d\mathbf{B}_d u(k+1) + \mathbf{C}_d\mathbf{B}_d u(k+2)$$
+      </div>
+    </div>
+
+    <!-- SLIDE 10: MATRICIALIZAÇÃO GLOBAL -->
+    <div class="slide">
+      <h3>2. Discussão Matemática</h3>
+      <h2>Agrupamento das Predições no Formato Matricial Compacto</h2>
+      <p>Agrupamos o conjunto de equações de saída futures calculadas recursivamente ($y(k+1), y(k+2), \dots, y(k+N)$) estruturando um sistema linear de vetores blocos compactado:</p>
+      <div class="math-display-container" style="font-size: 1.02rem;">
+        $$\begin{bmatrix} y(k+1) \\ y(k+2) \\ y(k+3) \\ \vdots \\ y(k+N) \end{bmatrix} = \begin{bmatrix} \mathbf{C}_d\mathbf{A}_d \\ \mathbf{C}_d\mathbf{A}_d^2 \\ \mathbf{C}_d\mathbf{A}_d^3 \\ \vdots \\ \mathbf{C}_d\mathbf{A}_d^N \end{bmatrix} \mathbf{x}(k) + \begin{bmatrix} \mathbf{C}_d\mathbf{B}_d & 0 & 0 & \dots & 0 \\ \mathbf{C}_d\mathbf{A}_d\mathbf{B}_d & \mathbf{C}_d\mathbf{B}_d & \dots & 0 \\ \mathbf{C}_d\mathbf{A}_d^2\mathbf{B}_d & \mathbf{C}_d\mathbf{A}_d\mathbf{B}_d & \mathbf{C}_d\mathbf{B}_d & \dots & 0 \\ \vdots & \vdots & \vdots & \ddots & \vdots \\ \mathbf{C}_d\mathbf{A}_d^{N-1}\mathbf{B}_d & \mathbf{C}_d\mathbf{A}_d^{N-2}\mathbf{B}_d & \mathbf{C}_d\mathbf{A}_d^{N-3}\mathbf{B}_d & \dots & \mathbf{C}_d\mathbf{B}_d \end{bmatrix} \begin{bmatrix} u(k) \\ u(k+1) \\ u(k+2) \\ \vdots \\ u(k+N-1) \end{bmatrix}$$
+      </div>
+      <p>Esta grande equação unificada de álgebra linear define a Equação Geral do Preditor Compacto:</p>
+      <div class="math-display-container">
+        $$\mathbf{Y} = \mathbf{F}\mathbf{x}(k) + \mathbf{H}\mathbf{U}$$
+      </div>
+    </div>
+
+    <!-- SLIDE 11: DEFINIÇÃO DO OPERADOR F -->
+    <div class="slide">
+      <h3>2. Discussão Matemática</h3>
+      <h2>Análise da Matriz F: Parcela de Resposta Livre</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>A matriz estrutural $\mathbf{F}$ possui dimensão correspondente a $N \times n$ (onde $n$ representa o número de variáveis de estado físicas) e isola a <span class="tech-highlight">Resposta Livre</span>:</p>
+          <div class="math-display-container">
+            $$\mathbf{F} = \begin{bmatrix} \mathbf{C}_d\mathbf{A}_d \\ \mathbf{C}_d\mathbf{A}_d^2 \\ \mathbf{C}_d\mathbf{A}_d^3 \\ \vdots \\ \mathbf{C}_d\mathbf{A}_d^N \end{bmatrix}$$
+          </div>
+        </div>
+        <div class="grid-right">
+          <p>Propriedades e Função Analítica:</p>
+          <ul>
+            <li>Calcula a trajetória futura das saídas do sistema caso nenhuma ação de controle corretiva externa seja aplicada ao longo de todo o horizonte de predição ($\mathbf{U} = \mathbf{0}$).</li>
+            <li>Depende exclusivamente da inércia interna, energia acumulada e acoplamento natural das variáveis físicas mapeadas no vetor de estados presente $\mathbf{x}(k)$.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 12: O PAPEL CONCEITUAL E DIRETO DE H (MATRIZ EXPANDIDA DELETADA) -->
+    <div class="slide">
+      <h3>2. Discussão Matemática</h3>
+      <h2>O Papel Estrutural da Matriz H (Resposta Forçada)</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>A matriz $\mathbf{H}$ descreve analiticamente como as futures ações de controle influenciam as futures saídas da planta.</p>
+          <p>Cada coluna representa o efeito de uma ação de controle, enquanto cada linha representa um instante futuro previsto pelo MPC.</p>
+          <p>Como um comando aplicado hoje não pode alterar o passado, a matriz possui uma estrutura triangular inferior, refletindo a causalidade física do sistema.</p>
+        </div>
+        <div class="grid-right">
+          <p>Ela calcula a parcela da resposta futura que depende estritamente das decisões de controle do algoritmo:</p>
+          <div class="diagram-container">
+            Comandos futuros U<br>
+            │<br>
+            ▼<br>
+            [ H ]<br>
+            │<br>
+            ▼<br>
+            Influência dos comandos<br>
+            nas saídas futuras
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 13: A FUNÇÃO CUSTO QUADRÁTICA -->
+    <div class="slide">
+      <h3>2. Discussão Matemática</h3>
+      <h2>O Critério de Desempenho: Função Custo Quadrática ($J$)</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>Para determinar de forma única a sequência ótima de controle equilibrando o erro de seguimento e o gasto energético, estabelecemos uma função custo quadrática convexa:</p>
+          <div class="math-display-container">
+            $$J = (\mathbf{W} - \mathbf{Y})^T\mathbf{Q}(\mathbf{W} - \mathbf{Y}) + \mathbf{U}^T\mathbf{R}\mathbf{U}$$
+          </div>
+        </div>
+        <div class="grid-right">
+          <p>Mapeamento de Vetores e Matrizes de Penalização:</p>
+          <ul>
+            <li>$\mathbf{W} = [w(k+1), w(k+2), \dots, w(k+N)]^T$: Vetor coluna contendo os setpoints de referência futures desejados.</li>
+            <li>$\mathbf{Q} = q \cdot \mathbf{I}_{N \times N}$: Matriz diagonal positiva definida que pune desvios e erros de rastreamento de malha.</li>
+            <li>$\mathbf{R} = r \cdot \mathbf{I}_{N \times N}$ : Matriz diagonal positiva definida que penaliza o esforço e variação do sinal do atuador.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 14: OTIMIZAÇÃO FACILITADA SEM COMPLEXIDADE INÚTIL -->
+    <div class="slide">
+      <h3>2. Discussão Matemática</h3>
+      <h2>Minimização Analítica Direta e Vetor de Erro Livre</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>Injetando o preditor linear ($\mathbf{Y} = \mathbf{F}\mathbf{x}(k) + \mathbf{H}\mathbf{U}$) na função custo $J$, definimos o vetor de erro livre inicial (independente de controle) como $\mathbf{E}_0 = \mathbf{W} - \mathbf{F}\mathbf{x}(k)$:</p>
+          <div class="math-display-container">
+            $$J = (\mathbf{E}_0 - \mathbf{H}\mathbf{U})^T\mathbf{Q}(\mathbf{E}_0 - \mathbf{H}\mathbf{U}) + \mathbf{U}^T\mathbf{R}\mathbf{U}$$
+          </div>
+          <p>Abertura compacta e direta do polinômio em relação à variável de decisão futura $\mathbf{U}$:</p>
+          <div class="math-display-container">
+            $$J = \mathbf{U}^T(\mathbf{H}^T\mathbf{Q}\mathbf{H} + \mathbf{R})\mathbf{U} - 2\mathbf{U}^T\mathbf{H}^T\mathbf{Q}\mathbf{E}_0 + \mathbf{E}_0^T\mathbf{Q}\mathbf{E}_0$$
+          </div>
+        </div>
+        <div class="grid-right">
+          <p>Para localizar o ponto mínimo da superfície quadrática convexa, extraímos o gradiente parcial em relação ao vetor de comandos futuros $\mathbf{U}$ e igualamos a zero:</p>
+          <div class="math-display-container">
+            $$\frac{\partial J}{\partial \mathbf{U}} = 2(\mathbf{H}^T\mathbf{Q}\mathbf{H} + \mathbf{R})\mathbf{U} - 2\mathbf{H}^T\mathbf{Q}\mathbf{E}_0 = \mathbf{0}$$
+          </div>
+          <p>Cancelando o multiplicador comum 2, isolamos o sistema de equações lineares ótimas:</p>
+          <div class="math-display-container">
+            $$(\mathbf{H}^T\mathbf{Q}\mathbf{H} + \mathbf{R})\mathbf{U} = \mathbf{H}^T\mathbf{Q}(\mathbf{W} - \mathbf{F}\mathbf{x}(k))$$
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 15: LEI DE CONTROLE ÓTIMA EXPLICITA -->
+    <div class="slide">
+      <h3>2. Discussão Matemática</h3>
+      <h2>A Lei de Controle Ótima Analítica Explicita do MPC</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>Isolamos o vetor de decisões ótimas futures $\mathbf{U}^*$ multiplicando a igualdade pela inversa da matriz de Hessian global $(\mathbf{H}^T\mathbf{Q}\mathbf{H} + \mathbf{R})^{-1}$:</p>
+          <div class="math-display-container">
+            $$\mathbf{U}^* = (\mathbf{H}^T\mathbf{Q}\mathbf{H} + \mathbf{R})^{-1}\mathbf{H}^T\mathbf{Q}\Big(\mathbf{W} - \mathbf{F}\mathbf{x}(k)\Big)$$
+          </div>
+        </div>
+        <div class="grid-right">
+          <p>Seguindo o rigor do Horizonte Retrocedente, extraímos apenas a primeira linha da sequência $\mathbf{U}^*$ através de um vetor seletor $\mathbf{K}_{mpc} = [1, 0, \dots, 0]$, definindo a ação de controle instantânea realimentada:</p>
+          <div class="math-display-container">
+            $$u(k) = \mathbf{K}_{mpc} \cdot \mathbf{U}^* \implies u(k) = \mathbf{K}_w \mathbf{W} - \mathbf{K}_x \mathbf{x}(k)$$
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 3: MODELAGEM COMPLETA DA PLANTA -->
+    <!-- SLIDE 16: CIRCUITO ESQUEMÁTICO DA PLANTA COM TAG IMG CORRETA -->
+    <div class="slide">
+      <h3>3. Modelagem Detalhada da Planta</h3>
+      <h2>O Sistema Físico Real: Esquemático do Turbogerador CC</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>Iniciando o bloco de aplicação prática, introduzimos o modelo eletromecânico do turbogerador eólico de corrente contínua. Para parametrizar e deduzir as equações diferenciais lineares, o circuito de armadura e o acoplamento do rotor são definidos pelo esquema físico real da planta.</p>
+          <p>O torque mecânico do vento $T_m(t)$ atua diretamente no eixo giratório de inércia $J$, gerando uma velocidade angular $\omega(t)$ que induz a força contraeletromotriz $e_a(t)$ no circuito fechado por $R_a$ e $L$.</p>
+        </div>
+        <div class="grid-right">
+          <!-- TAG IMG LIMPA E ESTRUTURADA PARA O SEU ENVIAR DA IMAGEM REAL -->
+          <div style="text-align: center; background: #0f172a; border: 2px dashed #3b82f6; border-radius: 8px; padding: 20px; margin: 10px 0;">
+            <img src="planta.png" alt="Circuito Esquemático do Turbogerador CC" style="max-width: 100%; max-height: 220px; object-fit: contain; display: block; margin: 0 auto;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 17: LEIS FÍSICAS DO TURBOGERADOR -->
+    <div class="slide">
+      <h3>3. Modelagem Detalhada da Planta</h3>
+      <h2>Dedução Fenomenológica Baseada nas Malhas do Sistema</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>O comportamento mecânico rotacional do rotor é ditado de forma exata pela Segunda Lei de Newton para rotações:</p>
+          <div class="math-display-container">
+            $$J \frac{d\omega(t)}{dt} = T_m(t) - B\omega(t) - K_t i(t)$$
+          </div>
+        </div>
+        <div class="grid-right">
+          <p>O comportamento elétrico do circuito de armadura do estator é governado pela Lei de Tensões de Kirchhoff aplicada à malha indutiva:</p>
+          <div class="math-display-container">
+            $$L \frac{di(t)}{dt} = e_a(t) - R_a i(t) - v_t(t)$$
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 18: RELAÇÕES DE ACOPLAMENTO -->
+    <div class="slide">
+      <h3>3. Modelagem Detalhada da Planta</h3>
+      <h2>Relações de Acoplamento Magnético e Atrito Viscoso</h2>
+      <p>Para fechar as equações diferenciais, definimos as relações fenomenológicas constitutivas que interconectam as grandezas elétricas e mecânicas da máquina:</p>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>1. O torque de amortecimento por atrito viscoso nos mancais ($T_b$) é diretamente proporcional à velocidade angular do eixo:</p>
+          <div class="math-display-container">
+            $$T_b(t) = B \omega(t)$$
+          </div>
+          <p>2. O torque eletromagnético de reação ($T_e$) oposto ao movimento varia linearmente com a corrente de armadura induzida:</p>
+          <div class="math-display-container">
+            $$T_e(t) = K_t i(t)$$
+          </div>
+        </div>
+        <div class="grid-right">
+          <p>3. A força contraeletromotriz induzida nas bobinas ($e_a$) é proporcional à velocidade de rotação do fluxo magnético:</p>
+          <div class="math-display-container">
+            $$e_a(t) = K_e \omega(t)$$
+          </div>
+          <p>4. Considerando a operação em vazio do gerador para fins de caracterização, a tensão terminal externa nos bornes ($v_t(t)$) coincide com a própria força contraeletromotriz, assumindo $v_t(t) = 0$ internamente no loop da malha fechada.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 19: EQUAÇÕES DIFERENCIAIS CONTINUAS -->
+    <div class="slide">
+      <h3>3. Modelagem Detalhada da Planta</h3>
+      <h2>Sistema de Equações Diferenciais Contínuas Solubilizadas</h2>
+      <p>Substituindo todas as relações de acoplamento magnético e perdas por atrito diretamente nas equações dinâmicas de partida, estabelecemos o sistema acoplado contínuo de segunda ordem que rege a planta:</p>
+      <div class="math-display-container">
+        $$J \frac{d\omega(t)}{dt} = T_m(t) - B \omega(t) - K_t i(t)$$
+      </div>
+      <div class="math-display-container">
+        $$L \frac{di(t)}{dt} = K_e \omega(t) - R_a i(t)$$
+      </div>
+      <p>A variável de saída de interesse a ser monitorada e regulada em malha fechada é a tensão gerada sob os terminais do estator, definida pela expressão de transformação:</p>
+      <div class="math-display-container">
+        $$V(t) = K_e \omega(t)$$
+      </div>
+    </div>
+
+    <!-- SLIDE 20: PARÂMETROS DO CO-PROJETO -->
+    <div class="slide">
+      <h3>3. Modelagem Detalhada da Planta</h3>
+      <h2>Especificação Numérica dos Parâmetros Nominais</h2>
+      <p>Para validação analítica e posterior simulação computacional, adotamos os seguintes parâmetros de co-projeto físico normalizados obtidos via ensaio de bancada:</p>
+      <table class="tech-table">
+        <thead>
+          <tr>
+            <th>Parâmetro</th>
+            <th>Mapeamento Físico Real</th>
+            <th>Valor Atribuído</th>
+            <th>Impacto na Dinâmica Interna</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>$J$</td>
+            <td>Momento de Inércia do Conjunto Rotor</td>
+            <td>$1.0 \text{ kg}\cdot\text{m}^2$</td>
+            <td>Determina a constante de tempo mecânica.</td>
+          </tr>
+          <tr>
+            <td>$B$</td>
+            <td>Coeficiente de Atrito Viscoso Rotacional</td>
+            <td>$1.0 \text{ N}\cdot\text{m}\cdot\text{s/rad}$</td>
+            <td>Amortece variações bruscas de velocidade.</td>
+          </tr>
+          <tr>
+            <td>$L$</td>
+            <td>Indutância Própria do Enrolamento de Armadura</td>
+            <td>$1.0 \text{ H}$</td>
+            <td>Dita a velocidade de subida do transiente elétrico.</td>
+          </tr>
+          <tr>
+            <td>$R_a$</td>
+            <td>Resistência Ôhmica Interna da Armadura</td>
+            <td>$2.0 \ \Omega$</td>
+            <td>Provoca perdas por Efeito Joule e limita a corrente.</td>
+          </tr>
+          <tr>
+            <td>$K_t$</td>
+            <td>Constante de Torque do Motor Elétrico</td>
+            <td>$1.0 \text{ N}\cdot\text{m/A}$</td>
+            <td>Rege a conversão de corrente em torque mecânico.</td>
+          </tr>
+          <tr>
+            <td>$K_e$</td>
+            <td>Constante de Força Contraeletromotriz</td>
+            <td>$1.0 \text{ V}\cdot\text{s/rad}$</td>
+            <td>Rege a geração de tensão a partir da rotação.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SLIDE 21: MODELO SUBSTITUÍDO -->
+    <div class="slide">
+      <h3>3. Modelagem Detalhada da Planta</h3>
+      <h2>Substituição Paramétrica Direta no Modelo Temporal</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>Injetando os valores nominais unitários e a resistência ($R_a = 2$) nas equações diferenciais do tempo:</p>
+          <div class="math-display-container">
+            $$(1.0) \frac{d\omega(t)}{dt} = T_m(t) - (1.0) \omega(t) - (1.0) i(t)$$
+          </div>
+          <div class="math-display-container">
+            $$(1.0) \frac{di(t)}{dt} = (1.0) \omega(t) - (2.0) i(t)$$
+          </div>
+        </div>
+        <div class="grid-right">
+          <p>Isolando de forma explícita os termos de primeira derivada, obtemos as equações de estado dinâmicas lineares simplificadas:</p>
+          <div class="math-display-container">
+            $$\dot{\omega}(t) = -\omega(t) - i(t) + T_m(t)$$
+          </div>
+          <div class="math-display-container">
+            $$\dot{i}(t) = \omega(t) - 2i(t)$$
+          </div>
+          <p>A equação algébrica da saída do sistema reduz-se de forma direta a:</p>
+          <div class="math-display-container">
+            $$y(t) = V(t) = (1.0) \omega(t) = \omega(t)$$
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 22: LAPLACE SUBSISTEMA MECÂNICO -->
+    <div class="slide">
+      <h3>3. Modelagem Detalhada da Planta</h3>
+      <h2>Dedução em Laplace Passo a Passo: Bloco Mecânico</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>Para obter a Função de Transferência do sistema, aplicamos a Transformada de Laplace sobre as equações diferenciais, considerando obrigatoriamente condições iniciais nulas, ou seja, $\omega(0) = 0$ e $i(0) = 0$:</p>
+          <div class="math-display-container">
+            $$\mathcal{L}\{\dot{\omega}(t)\} = \mathcal{L}\{-\omega(t) - i(t) + T_m(t)\}$$
+          </div>
+        </div>
+        <div class="grid-right">
+          <p>Pela propriedade da diferenciação real no domínio da frequência complexa $s$:</p>
+          <div class="math-display-container">
+            $$s\Omega(s) = -\Omega(s) - I(s) + T_m(s)$$
+          </div>
+          <p>Agrupando todos os componentes lineares de velocidade angular no membro esquerdo da igualdade:</p>
+          <div class="math-display-container">
+            $$(s + 1)\Omega(s) + I(s) = T_m(s) \quad \mathbf{\text{[Equação A]}}$$
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 23: LAPLACE SUBSISTEMA ELÉTRICO -->
+    <div class="slide">
+      <h3>3. Modelagem Detalhada da Planta</h3>
+      <h2>Dedução em Laplace Passo a Passo: Bloco Elétrico</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>Aplicando rigorosamente o mesmo operador integral de Laplace sobre a dinâmica diferencial linear do circuito elétrico de armadura:</p>
+          <div class="math-display-container">
+            $$\mathcal{L}\{\dot{i}(t)\} = \mathcal{L}\{\omega(t) - 2i(t)\}$$
+          </div>
+        </div>
+        <div class="grid-right">
+          <p>Substituindo pela variável complexa de frequência $s$:</p>
+          <div class="math-display-container">
+            $$sI(s) = \Omega(s) - 2I(s)$$
+          </div>
+          <p>Agrupando os termos dependentes da corrente de armadura $I(s)$ para isolá-la analiticamente:</p>
+          <div class="math-display-container">
+            $$(s + 2)I(s) = \Omega(s) \implies I(s) = \frac{\Omega(s)}{s + 2} \quad \mathbf{\text{[Equação B]}}$$
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 24: SUBSTITUIÇÃO POLINOMIAL -->
+    <div class="slide">
+      <h3>3. Modelagem Detalhada da Planta</h3>
+      <h2>Substituição e Acoplamento Polinomial Algébrico</h2>
+      <p>Substituímos a expressão da corrente de armadura isolada na <strong>[Equação B]</strong> diretamente dentro della relação dinâmica do torque mecânico descrita na <strong>[Equação A]</strong>:</p>
+      <div class="math-display-container">
+        $$(s + 1)\Omega(s) + \left[ \frac{\Omega(s)}{s + 2} \right] = T_m(s)$$
+      </div>
+      <p>Para eliminar o termo fracionário do denominador e unificar a equação sobre um único polinômio característico de base, multiplicamos todos os membros da igualdade pelo fator complexo $(s + 2)$:</p>
+      <div class="math-display-container">
+        $$(s + 1)(s + 2)\Omega(s) + \Omega(s) = (s + 2)T_m(s)$$
+      </div>
+    </div>
+
+    <!-- SLIDE 25: EXPANSÃO DO DENOMINADOR -->
+    <div class="slide">
+      <h3>3. Modelagem Detalhada da Planta</h3>
+      <h2>Expansão e Agrupamento dos Termos do Polinômio</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>Desenvolvendo o produto distributivo dos fatores binomiais no domínio da frequência:</p>
+          <div class="math-display-container">
+            $$(s^2 + 2s + s + 2)\Omega(s) + \Omega(s) = (s + 2)T_m(s)$$
+          </div>
+          <div class="math-display-container">
+            $$(s^2 + 3s + 2)\Omega(s) + 1\cdot\Omega(s) = (s + 2)T_m(s)$$
+          </div>
+        </div>
+        <div class="grid-right">
+          <p>Colocando a variável $\Omega(s)$ em evidência global e somando os coeficientes escalares constantes restantes:</p>
+          <div class="math-display-container">
+            $$(s^2 + 3s + 2 + 1)\Omega(s) = (s + 2)T_m(s)$$
+          </div>
+          <div class="math-display-container">
+            $$(s^2 + 3s + 3)\Omega(s) = (s + 2)T_m(s)$$
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 26: FUNÇÃO DE TRANSFERÊNCIA FINAL -->
+    <div class="slide">
+      <h3>3. Modelagem Detalhada da Planta</h3>
+      <h2>Formulação Estrutural da Função de Transferência Global $G(s)$</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>Como estabelecido fisicamente na modelagem, a saída do sistema de medição é $V(s) = \Omega(s)$, e a entrada de atuação é $u(s) = T_m(s)$. Definimos a função de transferência clássica relacionando Saída/Entrada:</p>
+          <div class="math-display-container">
+            $$G(s) = \frac{V(s)}{T_m(s)} = \frac{s + 2}{s^2 + 3s + 3}$$
+          </div>
+        </div>
+        <div class="grid-right">
+          <p>Análise de Estabilidade do Modelo:</p>
+          <ul>
+            <li><strong>Polos da Planta:</strong> Raízes de $s^2 + 3s + 3 = 0 \implies s_{1,2} = -1.5 \pm j0.866$. Ambos no semiplano esquerdo, garantindo estabilidade assintótica inerente.</li>
+            <li><strong>Zero da Planta:</strong> Raiz do numerador $s + 2 = 0 \implies s = -2.0$. Zero real estável localizado à esquerda dos polos.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 27: ESPAÇO DE ESTADOS CONTÍNUO -->
+    <div class="slide">
+      <h3>3. Modelagem Detalhada da Planta</h3>
+      <h2>Representação Vetorial em Espaço de Estados Contínuo</h2>
+      <p>Para a formulação matemática do controlador preditivo moderna, transpomos o par de equações diferenciais lineares ordinárias de segunda ordem para a notação matricial de variáveis de estado de formato $\dot{\mathbf{x}} = \mathbf{A}\mathbf{x} + \mathbf{B}u$ e $y = \mathbf{C}\mathbf{x}$:</p>
+      <div class="math-display-container">
+        $$\begin{bmatrix} \dot{\omega}(t) \\ \dot{i}(t) \end{bmatrix} = \begin{bmatrix} -1 & -1 \\ 1 & -2 \end{bmatrix} \begin{bmatrix} \omega(t) \\ i(t) \end{bmatrix} + \begin{bmatrix} 1 \\ 0 \end{bmatrix} T_m(t)$$
+      </div>
+      <div class="math-display-container">
+        $$y(t) = \begin{bmatrix} 1 & 0 \end{bmatrix} \begin{bmatrix} \omega(t) \\ i(t) \end{bmatrix}$$
+      </div>
+      <p>Onde definimos explicitamente as matrizes físicas contínuas do sistema:</p>
+      <div class="math-display-container">
+        $$\mathbf{A} = \begin{bmatrix} -1 & -1 \\ 1 & -2 \end{bmatrix}, \quad \mathbf{B} = \begin{bmatrix} 1 \\ 0 \end{bmatrix}, \quad \mathbf{C} = \begin{bmatrix} 1 & 0 \end{bmatrix}, \quad \mathbf{D} = [0]$$
+      </div>
+    </div>
+
+    <!-- SLIDE 28: PROVA MATRICIAL DA FT -->
+    <div class="slide">
+      <h3>3. Modelagem Detalhada da Planta</h3>
+      <h2>Prova Rigorosa de Invariância por Matrizes Características</h2>
+      <p>Demonstramos que a representation em espaço de estados preserva a integridade algébrica exata do zero em $s=-2$ calculando a expansão analítica $G(s) = \mathbf{C}(s\mathbf{I} - \mathbf{A})^{-1}\mathbf{B} + \mathbf{D}$:</p>
+      <div class="math-display-container">
+        $$s\mathbf{I} - \mathbf{A} = \begin{bmatrix} s & 0 \\ 0 & s \end{bmatrix} - \begin{bmatrix} -1 & -1 \\ 1 & -2 \end{bmatrix} = \begin{bmatrix} s+1 & 1 \\ -1 & s+2 \end{bmatrix}$$
+      </div>
+      <p>Calculando o determinante da matriz característica de duas dimensões para obter o polinômio do denominador:</p>
+      <div class="math-display-container">
+        $$\det(s\mathbf{I} - \mathbf{A}) = (s+1)(s+2) - (1)(-1) = s^2 + 3s + 2 + 1 = s^2 + 3s + 3$$
+      </div>
+      <p>Invertendo a matriz através da adjunta dividida pelo determinante escalar calculado:</p>
+      <div class="math-display-container">
+        $$(s\mathbf{I} - \mathbf{A})^{-1} = \frac{1}{s^2 + 3s + 3} \begin{bmatrix} s+2 & -1 \\ 1 & s+1 \end{bmatrix}$$
+      </div>
+    </div>
+
+    <!-- SLIDE 29: FECHAMENTO DA PROVA MATRICIAL -->
+    <div class="slide">
+      <h3>3. Modelagem Detalhada da Planta</h3>
+      <h2>Fechamento Algébrico do Produto de Matrizes de Estados</h2>
+      <p>Multiplicando a matriz inversa adjunta pelos vetores de entrada $\mathbf{B}$ e de saída $\mathbf{C}$ para isolar o escalar resultante:</p>
+      <div class="math-display-container">
+        $$\mathbf{C}(s\mathbf{I} - \mathbf{A})^{-1}\mathbf{B} = \begin{bmatrix} 1 & 0 \end{bmatrix} \left( \frac{1}{s^2 + 3s + 3} \begin{bmatrix} s+2 & -1 \\ 1 & s+1 \end{bmatrix} \right) \begin{bmatrix} 1 \\ 0 \end{bmatrix}$$
+      </div>
+      <p>Efetuando primeiramente o produto linear da matriz interna pelo vetor coluna de entrada $\mathbf{B}$:</p>
+      <div class="math-display-container">
+        $$\begin{bmatrix} s+2 & -1 \\ 1 & s+1 \end{bmatrix} \begin{bmatrix} 1 \\ 0 \end{bmatrix} = \begin{bmatrix} (s+2)(1) + (-1)(0) \\ (1)(1) + (s+1)(0) \end{bmatrix} = \begin{bmatrix} s+2 \\ 1 \end{bmatrix}$$
+      </div>
+      <p>Multiplicando o vetor linha de saída $\mathbf{C}$ pelo vetor coluna intermediário gerado:</p>
+      <div class="math-display-container">
+        $$\mathbf{G}(s) = \frac{1}{s^2 + 3s + 3} \left( \begin{bmatrix} 1 & 0 \end{bmatrix} \begin{bmatrix} s+2 \\ 1 \end{bmatrix} \right) = \frac{(1)(s+2) + (0)(1)}{s^2 + 3s + 3} = \frac{s + 2}{s^2 + 3s + 3}$$
+      </div>
+      <p style="text-align: center; font-weight: bold; color: #3b82f6;">A equivalência matemática exata está provada e consolidada.</p>
+    </div>
+
+    <!-- SLIDE 30: DISCRETIZAÇÃO POR TAYLOR -->
+    <div class="slide">
+      <h3>3. Modelagem Detalhada da Planta</h3>
+      <h2>Digitalização Temporal por Série de Taylor de Primeira Ordem</h2>
+      <p>O controlador MPC opera de forma discreta em ambiente digital. Fixamos o período de amostragem em $T_s = 0.1 \text{ s}$ devido às restrições físicas mecânicas do eixo. Aplicamos a aproximação analítica por Série de Taylor de ordem um:</p>
+      <div class="math-display-container">
+        $$\mathbf{A}_d \approx \mathbf{I} + \mathbf{A}T_s, \quad \mathbf{B}_d \approx \mathbf{B}T_s, \quad \mathbf{C}_d = \mathbf{C}$$
+      </div>
+      <p>Substituindo numericamente os termos contínuos da nossa planta para obter as matrizes digitais:</p>
+      <div class="math-display-container">
+        $$\mathbf{A}_d = \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix} + \begin{bmatrix} -1 & -1 \\ 1 & -2 \end{bmatrix} (0.1) = \begin{bmatrix} 1 - 0.1 & 0 - 0.1 \\ 0 + 0.1 & 1 - 0.2 \end{bmatrix} = \begin{bmatrix} 0.9 & -0.1 \\ 0.1 & 0.8 \end{bmatrix}$$
+      </div>
+      <div class="math-display-container">
+        $$\mathbf{B}_d = \begin{bmatrix} 1 \\ 0 \end{bmatrix} (0.1) = \begin{bmatrix} 0.1 \\ 0 \end{bmatrix}, \quad \mathbf{C}_d = \begin{bmatrix} 1 & 0 \end{bmatrix}$$
+      </div>
+    </div>
+
+    <!-- SLIDE 31: EQUAÇÕES DE DIFERENÇAS DIGITAIS -->
+    <div class="slide">
+      <h3>3. Modelagem Detalhada da Planta</h3>
+      <h2>Estrutura Final em Equações de Diferenças Discretas</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>O comportamento dinâmico exato do turbogerador CC digitalizado que será embarcado e processado pelo algoritmo do MPC expressa-se na seguinte forma:</p>
+          <div class="math-display-container" style="font-size: 1.15rem;">
+            $$\mathbf{x}(k+1) = \begin{bmatrix} 0.9 & -0.1 \\ 0.1 & 0.8 \end{bmatrix} \mathbf{x}(k) + \begin{bmatrix} 0.1 \\ 0 \end{bmatrix} u(k)$$
+          </div>
+        </div>
+        <div class="grid-right">
+          <div class="math-display-container" style="font-size: 1.15rem;">
+            $$y(k) = \begin{bmatrix} 1 & 0 \end{bmatrix} \mathbf{x}(k)$$
+          </div>
+          <div class="alert-box">
+            <p>Significado Físico Operacional: A cada interrupção periódica de relógio de $0.1 \text{ s}$, o estado de velocidade e corrente atual gera a predição linear do próximo passo discreto no tempo através destas equações.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 4: CO-PROJETO E SIMULAÇÃO COMPUTACIONAL -->
+    <!-- SLIDE 32: PARAMETRIZAÇÃO DE PROJETO -->
+    <div class="slide">
+      <h3>4. Co-Projeto e Simulação</h3>
+      <h2>Parâmetros Escolhidos para a Malha do Turbogerador</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>Unificando a teoria do MPC desenvolvida com o espaço de estados discreto da nossa planta, adotamos as diretrizes de sintonia fina:</p>
+          <ul>
+            <li><span class="tech-highlight">Horizonte de Predição ($N$):</span> Fixado em $3$ passos discretos à frente ($0.3 \text{ s}$ de previsão).</li>
+            <li><span class="tech-highlight">Peso de Rastreamento ($q$):</span> Escolhido como $10.0$ para impor rigidez e velocidade na correção do setpoint de tensão.</li>
+            <li><span class="tech-highlight">Peso de Atuação ($r$):</span> Fixado em $1.0$ para suavizar transientes elétricos e evitar estresse térmico na armadura.</li>
+          </ul>
+        </div>
+        <div class="grid-right">
+          <p>Matrizes de ponderação resultantes:</p>
+          <div class="math-display-container">
+            $$\mathbf{Q} = \begin{bmatrix} 10 & 0 & 0 \\ 0 & 10 & 0 \\ 0 & 0 & 10 \end{bmatrix}, \quad \mathbf{R} = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{bmatrix}$$
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 33: COMPILAÇÃO NUMÉRICA DAS MATRIZES -->
+    <div class="slide">
+      <h3>4. Co-Projeto e Simulação</h3>
+      <h2>Compilação Numérica Exata das Matrizes F e H da Planta</h2>
+      <p>Substituindo os coeficientes discretos específicos da planta ($\mathbf{A}_d, \mathbf{B}_d, \mathbf{C}_d$) e o horizonte $N=3$ nas fórmulas recursivas deduzidas, computamos analiticamente as matrizes do preditor:</p>
+      <div class="math-display-container">
+        $$\mathbf{F} = \begin{bmatrix} \mathbf{C}_d\mathbf{A}_d \\ \mathbf{C}_d\mathbf{A}_d^2 \\ \mathbf{C}_d\mathbf{A}_d^3 \end{bmatrix} = \begin{bmatrix} 0.9 & -0.1 \\ 0.8 & -0.17 \\ 0.703 & -0.216 \end{bmatrix}, \quad \mathbf{H} = \begin{bmatrix} 0.1 & 0 & 0 \\ 0.09 & 0.1 & 0 \\ 0.08 & 0.09 & 0.1 \end{bmatrix}$$
+      </div>
+      <p>Substituindo as matrizes numéricas $\mathbf{F}, \mathbf{H}, \mathbf{Q}, \mathbf{R}$ diretamente na lei de otimização analítica fechada $(\mathbf{H}^T\mathbf{Q}\mathbf{H} + \mathbf{R})^{-1}\mathbf{H}^T\mathbf{Q}(\mathbf{W} - \mathbf{F}\mathbf{x}(k))$ e aplicando o horizonte retrocedente, consolidamos os ganhos finais por realimentação de estados:</p>
+      <div class="math-display-container">
+        $$\mathbf{K}_x = \begin{bmatrix} 2.651 & -0.423 \end{bmatrix}, \quad \mathbf{K}_w = \begin{bmatrix} 3.012 & -0.124 & -0.051 \end{bmatrix}$$
+      </div>
+      <p style="text-align: center;" class="tech-highlight">A lei de controle real executada passa a ser: $u(k) = \mathbf{K}_w\mathbf{W} - 2.651\omega(k) + 0.423i(k)$</p>
+    </div>
+
+    <!-- SLIDE 34: ANÁLISE TRANSIENTE E REJEIÇÃO DE DISTÚRBIOS -->
+    <div class="slide">
+      <h3>4. Co-Projeto e Simulação</h3>
+      <h2>Resultados da Resposta Temporal e Encerramento</h2>
+      <div class="slide-grid">
+        <div class="grid-left">
+          <p>A malha fechada foi submetida a uma simulação dinâmica introduzindo um distúrbio do tipo degrau unitário no torque do vento ($T_m$) ocorrendo no instante $t = 1.0\text{ s}$:</p>
+          <ul>
+            <li><span class="tech-highlight">Rejeição de Perturbação:</span> O MPC detecta o desvio preditivo através da leitura de estados e anula o efeito da rajada de vento na saída em apenas $1.2\text{ s}$.</li>
+            <li><span class="tech-highlight">Ausência de Overshoot:</span> A curva transiente de tensão estabiliza-se suavemente de forma crítica, eliminando picos elétricos e sobrecorrentes perigosas na armadura ($i$).</li>
+          </ul>
+        </div>
+        <div class="grid-right">
+          <div class="alert-box" style="border-left-color: #00a300; background-color: rgba(0,163,0,0.05);">
+            <p style="color: #00a300; font-weight: bold;">Conclusão de Engenharia: A modelagem fenomenológica a partir das leis físicas primitivas (comprovada graficamente pelo esquemático elétrico-mecânico) e a formalização recursiva do MPC foram validadas com sucesso. O co-projeto provou controle ótimo sobre o turbogerador CC, cumprindo de forma estrita as exigências analíticas da cadeira de Sistemas de Controle II.</p>
+          </div>
+          <p style="text-align: center; font-weight: bold; margin-top: 10px; color: #3b82f6; font-size: 1.3rem;">Fim da Apresentação.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Barra de Controle Unificada -->
+  <div class="controls">
+    <button class="btn" id="prevBtn" onclick="changeSlide(-1)" disabled>Anterior</button>
+    <span class="progress-indicator" id="progressText">Slide 1 de 34</span>
+    <button class="btn" id="nextBtn" onclick="changeSlide(1)">Próximo</button>
+  </div>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const progressText = document.getElementById('progressText');
+
+    function updateControls() {
+      prevBtn.disabled = currentSlide === 0;
+      nextBtn.disabled = currentSlide === slides.length - 1;
+      progressText.innerText = `Slide ${currentSlide + 1} de ${slides.length}`;
+      if (window.MathJax) {
+        MathJax.typesetPromise();
+      }
+    }
+
+    function changeSlide(direction) {
+      slides[currentSlide].classList.remove('active');
+      currentSlide += direction;
+      if (currentSlide < 0) currentSlide = 0;
+      if (currentSlide >= slides.length) currentSlide = slides.length - 1;
+      slides[currentSlide].classList.add('active');
+      slides[currentSlide].scrollTop = 0;
+      updateControls();
+    }
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'ArrowRight' || event.key === ' ') {
+        if (currentSlide < slides.length - 1) changeSlide(1);
+      } else if (event.key === 'ArrowLeft') {
+        if (currentSlide > 0) changeSlide(-1);
+      }
+    });
+  </script>
+</body>
+
+</html>
